@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Add Publication | Faculty Publication System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="css/style.css" rel="stylesheet">
+</head>
+<body data-page="new-publication" class="app-page">
+<div class="app-layout">
+  <aside class="app-sidebar">
+    <div>
+      <p class="eyebrow mb-1">FPS</p>
+      <h3>Faculty Portal</h3>
+      <p class="small text-muted mb-4">Publication Governance Suite</p>
+      <a class="nav-link" href="dashboard.html">Dashboard</a>
+      <a class="nav-link active" href="new-report.html">Add Publication</a>
+    </div>
+    <a class="nav-link logout" href="#" id="logoutLink">Sign Out</a>
+  </aside>
+
+  <main class="app-main">
+    <header class="page-header">
+      <div>
+        <p class="eyebrow mb-2">Create Record</p>
+        <h1>New Publication Entry</h1>
+      </div>
+      <div>
+        <p class="mb-1 fw-semibold text-end" id="facultyDisplayName">Faculty</p>
+        <div class="timestamp" id="liveDate"></div>
+      </div>
+    </header>
+
+    <section class="panel form-panel">
+      <h4 class="mb-1">Publication Details</h4>
+      <p class="text-muted">Complete the fields below to insert a verified publication in the institutional database.</p>
+      <form id="publicationForm" class="row g-3 mt-1">
+        <div class="col-12">
+          <label class="form-label" for="title">Title</label>
+          <input id="title" class="form-control" placeholder="Deep Learning for Biomedical Signal Processing" required>
+        </div>
+        <div class="col-12">
+          <label class="form-label" for="authors">Authors</label>
+          <input id="authors" class="form-control" placeholder="Jane Doe, John Smith, Priya Kumar" required>
+        </div>
+        <div class="col-md-8">
+          <label class="form-label" for="venue">Journal / Conference</label>
+          <input id="venue" class="form-control" placeholder="IEEE Transactions on..." required>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label" for="type">Type</label>
+          <select id="type" class="form-select" required>
+            <option value="">Select type</option>
+            <option value="Journal">Journal</option>
+            <option value="Conference">Conference</option>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="publishedDate">Published Date</label>
+          <input id="publishedDate" type="date" class="form-control" required>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="doi">DOI</label>
+          <input id="doi" class="form-control" placeholder="10.1000/xyz123">
+        </div>
+        <div class="col-12">
+          <label class="form-label" for="content">Publication Content / Abstract</label>
+          <textarea id="content" class="form-control" rows="5" placeholder="Write publication summary, abstract, or key content..." required></textarea>
+        </div>
+        <div class="col-12">
+          <label class="form-label" for="attachment">Upload Supporting File</label>
+          <input id="attachment" type="file" class="form-control" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.zip">
+          <div class="form-text">Max file size: 10 MB</div>
+        </div>
+        <div class="col-12 d-flex gap-2">
+          <button id="savePublicationButton" class="btn btn-primary rounded-pill px-4">Save Publication</button>
+          <a href="dashboard.html" class="btn btn-outline-secondary rounded-pill px-4">Back to Dashboard</a>
+        </div>
+      </form>
+      <p id="formMessage" class="mb-0 mt-3 d-none"></p>
+    </section>
+  </main>
+</div>
+<script src="js/app.js"></script>
+</body>
+</html>
