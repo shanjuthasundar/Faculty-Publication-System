@@ -6,8 +6,6 @@
   --border: #d7dde7;
   --primary: #0a5ccf;
   --primary-strong: #0949a5;
-  --sidebar: #0f1b2d;
-  --sidebar-ink: #e9eef8;
   --accent: #e8f1ff;
 }
 
@@ -17,7 +15,7 @@
 
 body {
   margin: 0;
-  font-family: "Manrope", sans-serif;
+  font-family: "Manrope", "Segoe UI", sans-serif;
   color: var(--ink);
   background: var(--bg);
 }
@@ -26,7 +24,7 @@ h1,
 h2,
 h3,
 h4 {
-  font-family: "Source Serif 4", serif;
+  font-family: "Source Serif 4", Georgia, serif;
 }
 
 .eyebrow {
@@ -137,7 +135,7 @@ h4 {
 
 .app-sidebar {
   background: linear-gradient(165deg, #0d1728 0%, #121f35 60%, #102542 100%);
-  color: var(--sidebar-ink);
+  color: #e9eef8;
   padding: 1.5rem 1rem;
   display: flex;
   flex-direction: column;

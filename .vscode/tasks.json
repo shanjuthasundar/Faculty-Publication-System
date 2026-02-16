@@ -1,0 +1,41 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Start FPS Backend",
+      "type": "shell",
+      "command": "powershell -ExecutionPolicy Bypass -File scripts/start.ps1 -NoBrowser",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Open FPS in Chrome",
+      "type": "shell",
+      "command": "Start-Process chrome \"http://127.0.0.1:8000/login.html\"",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Run FPS (Server + Chrome)",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "Start FPS Backend",
+        "Open FPS in Chrome"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Stop FPS Backend",
+      "type": "shell",
+      "command": "powershell -ExecutionPolicy Bypass -File scripts/stop.ps1",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    }
+  ]
+}
