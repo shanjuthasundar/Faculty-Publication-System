@@ -57,6 +57,8 @@ def ensure_database() -> None:
                 authors TEXT NOT NULL,
                 venue TEXT NOT NULL,
                 pub_type TEXT NOT NULL,
+                conference_scope TEXT NOT NULL DEFAULT '',
+                indexing_params TEXT NOT NULL DEFAULT '',
                 published_date TEXT NOT NULL,
                 content TEXT NOT NULL DEFAULT '',
                 doi TEXT,
@@ -73,6 +75,10 @@ def ensure_database() -> None:
         columns = {row[1] for row in conn.execute("PRAGMA table_info(publications)").fetchall()}
         if "content" not in columns:
             conn.execute("ALTER TABLE publications ADD COLUMN content TEXT NOT NULL DEFAULT ''")
+        if "conference_scope" not in columns:
+            conn.execute("ALTER TABLE publications ADD COLUMN conference_scope TEXT NOT NULL DEFAULT ''")
+        if "indexing_params" not in columns:
+            conn.execute("ALTER TABLE publications ADD COLUMN indexing_params TEXT NOT NULL DEFAULT ''")
         if "file_name" not in columns:
             conn.execute("ALTER TABLE publications ADD COLUMN file_name TEXT")
         if "file_type" not in columns:
@@ -233,6 +239,8 @@ class FacultyPublicationHandler(BaseHTTPRequestHandler):
                 stats["total"] += row["count"]
                 if row["pub_type"] == "Journal":
                     stats["journals"] = row["count"]
+                if row["pub_type"] == "Article":
+                    stats["journals"] += row["count"]
                 if row["pub_type"] == "Conference":
                     stats["conferences"] = row["count"]
             self._send_json(HTTPStatus.OK, {"stats": stats})
@@ -291,7 +299,7 @@ class FacultyPublicationHandler(BaseHTTPRequestHandler):
             pub_type = query_params.get("type", [""])[0].strip()
 
             sql = """
-                SELECT id, title, authors, venue, pub_type, published_date, content, doi, file_name, created_at
+                SELECT id, title, authors, venue, pub_type, conference_scope, indexing_params, published_date, content, doi, file_name, created_at
                 FROM publications
                 WHERE faculty_id = ?
             """
@@ -314,6 +322,8 @@ class FacultyPublicationHandler(BaseHTTPRequestHandler):
                     "authors": row["authors"],
                     "venue": row["venue"],
                     "type": row["pub_type"],
+                    "conferenceScope": row["conference_scope"] or "",
+                    "indexing": [value for value in (row["indexing_params"] or "").split(",") if value],
                     "publishedDate": row["published_date"],
                     "content": row["content"] or "",
                     "doi": row["doi"] or "",
@@ -350,7 +360,7 @@ class FacultyPublicationHandler(BaseHTTPRequestHandler):
 
                 if faculty and not verify_password(password, faculty["password_hash"], faculty["password_salt"]):
                     name_matches = names_match(name, faculty["name"])
-                    allow_recovery = name_matches and (recover or bool(name))
+                    allow_recovery = name_matches and recover
                     if allow_recovery:
                         password_hash, password_salt = hash_password(password)
                         conn.execute(
@@ -370,7 +380,7 @@ class FacultyPublicationHandler(BaseHTTPRequestHandler):
                             HTTPStatus.UNAUTHORIZED,
                             {
                                 "error": (
-                                    "Invalid credentials. Enter your faculty name and enable password reset "
+                                    "Invalid credentials. Enter your author name and enable password reset "
                                     "to set a new password."
                                 )
                             },
@@ -381,7 +391,7 @@ class FacultyPublicationHandler(BaseHTTPRequestHandler):
                     if not name:
                         self._send_json(
                             HTTPStatus.BAD_REQUEST,
-                            {"error": "Faculty name is required for first-time login."},
+                            {"error": "Author name is required for first-time login."},
                         )
                         return
                     password_hash, password_salt = hash_password(password)
@@ -436,6 +446,8 @@ class FacultyPublicationHandler(BaseHTTPRequestHandler):
             authors = (payload.get("authors") or "").strip()
             venue = (payload.get("venue") or "").strip()
             pub_type = (payload.get("type") or "").strip()
+            conference_scope = (payload.get("conferenceScope") or "").strip()
+            indexing_values = payload.get("indexing") or []
             published_date = (payload.get("publishedDate") or "").strip()
             content = (payload.get("content") or "").strip()
             doi = (payload.get("doi") or "").strip()
@@ -459,11 +471,37 @@ class FacultyPublicationHandler(BaseHTTPRequestHandler):
                 if not file_type:
                     file_type = "application/octet-stream"
 
+            if not isinstance(indexing_values, list):
+                self._send_json(HTTPStatus.BAD_REQUEST, {"error": "Invalid indexing payload."})
+                return
+
+            allowed_indexing = {"Scopus", "SCI"}
+            normalized_indexing: list[str] = []
+            for value in indexing_values:
+                current = str(value).strip()
+                if not current:
+                    continue
+                if current not in allowed_indexing:
+                    self._send_json(HTTPStatus.BAD_REQUEST, {"error": "Unsupported indexing parameter."})
+                    return
+                if current not in normalized_indexing:
+                    normalized_indexing.append(current)
+
+            if pub_type == "Conference":
+                if conference_scope not in {"National", "International"}:
+                    self._send_json(
+                        HTTPStatus.BAD_REQUEST,
+                        {"error": "Conference scope must be National or International."},
+                    )
+                    return
+            else:
+                conference_scope = "N/A"
+
             if (
                 not title
                 or not authors
                 or not venue
-                or pub_type not in {"Journal", "Conference"}
+                or pub_type not in {"Journal", "Conference", "Article"}
                 or not published_date
                 or not content
             ):
@@ -474,8 +512,8 @@ class FacultyPublicationHandler(BaseHTTPRequestHandler):
                 conn.execute(
                     """
                     INSERT INTO publications (
-                        faculty_id, title, authors, venue, pub_type, published_date, content, doi, file_name, file_type, file_data, created_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        faculty_id, title, authors, venue, pub_type, conference_scope, indexing_params, published_date, content, doi, file_name, file_type, file_data, created_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         faculty["id"],
@@ -483,6 +521,8 @@ class FacultyPublicationHandler(BaseHTTPRequestHandler):
                         authors,
                         venue,
                         pub_type,
+                        conference_scope,
+                        ",".join(normalized_indexing),
                         published_date,
                         content,
                         doi,

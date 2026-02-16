@@ -50,7 +50,16 @@
     <section class="panel">
       <div class="panel-head">
         <h4 class="mb-0">Publication Records</h4>
-        <input id="searchInput" class="form-control search-box" placeholder="Search by title, venue, author">
+        <div class="d-flex gap-2 w-100 justify-content-end flex-wrap">
+          <select id="typeFilter" class="form-select search-box">
+            <option value="All">All Types</option>
+            <option value="International Conference">International Conference</option>
+            <option value="National Conference">National Conference</option>
+            <option value="Journal">Journal</option>
+            <option value="Article">Article</option>
+          </select>
+          <input id="searchInput" class="form-control search-box" placeholder="Search by title, venue, author">
+        </div>
       </div>
       <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
@@ -58,6 +67,8 @@
             <tr>
               <th>Publication</th>
               <th>Type</th>
+              <th>Scope</th>
+              <th>Indexing</th>
               <th>Venue</th>
               <th>Date</th>
               <th>DOI</th>

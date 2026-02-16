@@ -56,8 +56,29 @@
           <select id="type" class="form-select" required>
             <option value="">Select type</option>
             <option value="Journal">Journal</option>
+            <option value="Article">Article</option>
             <option value="Conference">Conference</option>
           </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="conferenceScope">Conference Scope</label>
+          <select id="conferenceScope" class="form-select">
+            <option value="">Select scope</option>
+            <option value="National">National Conference</option>
+            <option value="International">International Conference</option>
+          </select>
+          <div class="form-text">Required only when type is Conference.</div>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label d-block mb-2">Indexing Parameters</label>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="checkbox" id="indexingScopus" name="indexing" value="Scopus">
+            <label class="form-check-label" for="indexingScopus">Scopus</label>
+          </div>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="checkbox" id="indexingSci" name="indexing" value="SCI">
+            <label class="form-check-label" for="indexingSci">SCI</label>
+          </div>
         </div>
         <div class="col-md-6">
           <label class="form-label" for="publishedDate">Published Date</label>

@@ -25,6 +25,8 @@ erDiagram
         TEXT authors
         TEXT venue
         TEXT pub_type
+        TEXT conference_scope
+        TEXT indexing_params
         TEXT published_date
         TEXT content
         TEXT doi
@@ -37,4 +39,3 @@ erDiagram
     FACULTIES ||--o{ SESSIONS : has
     FACULTIES ||--o{ PUBLICATIONS : creates
 ```
-
