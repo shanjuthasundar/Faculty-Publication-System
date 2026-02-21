@@ -29,6 +29,9 @@ erDiagram
         TEXT indexing_params
         TEXT published_date
         TEXT content
+        TEXT publication_status
+        INTEGER citation_count
+        TEXT publisher_name
         TEXT doi
         TEXT file_name
         TEXT file_type

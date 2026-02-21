@@ -61,6 +61,9 @@ def ensure_database() -> None:
                 indexing_params TEXT NOT NULL DEFAULT '',
                 published_date TEXT NOT NULL,
                 content TEXT NOT NULL DEFAULT '',
+                publication_status TEXT NOT NULL DEFAULT 'Submitted',
+                citation_count INTEGER NOT NULL DEFAULT 0,
+                publisher_name TEXT NOT NULL DEFAULT '',
                 doi TEXT,
                 file_name TEXT,
                 file_type TEXT,
@@ -79,6 +82,12 @@ def ensure_database() -> None:
             conn.execute("ALTER TABLE publications ADD COLUMN conference_scope TEXT NOT NULL DEFAULT ''")
         if "indexing_params" not in columns:
             conn.execute("ALTER TABLE publications ADD COLUMN indexing_params TEXT NOT NULL DEFAULT ''")
+        if "publication_status" not in columns:
+            conn.execute("ALTER TABLE publications ADD COLUMN publication_status TEXT NOT NULL DEFAULT 'Submitted'")
+        if "citation_count" not in columns:
+            conn.execute("ALTER TABLE publications ADD COLUMN citation_count INTEGER NOT NULL DEFAULT 0")
+        if "publisher_name" not in columns:
+            conn.execute("ALTER TABLE publications ADD COLUMN publisher_name TEXT NOT NULL DEFAULT ''")
         if "file_name" not in columns:
             conn.execute("ALTER TABLE publications ADD COLUMN file_name TEXT")
         if "file_type" not in columns:
@@ -227,22 +236,29 @@ class FacultyPublicationHandler(BaseHTTPRequestHandler):
             with self._connect() as conn:
                 rows = conn.execute(
                     """
-                    SELECT pub_type, COUNT(*) AS count
+                    SELECT pub_type, publication_status, COUNT(*) AS count
                     FROM publications
                     WHERE faculty_id = ?
-                    GROUP BY pub_type
+                    GROUP BY pub_type, publication_status
                     """,
                     (faculty["id"],),
                 ).fetchall()
-            stats = {"total": 0, "journals": 0, "conferences": 0}
+            stats = {"total": 0, "journals": 0, "conferences": 0, "submitted": 0, "accepted": 0, "published": 0}
             for row in rows:
                 stats["total"] += row["count"]
                 if row["pub_type"] == "Journal":
-                    stats["journals"] = row["count"]
+                    stats["journals"] += row["count"]
                 if row["pub_type"] == "Article":
                     stats["journals"] += row["count"]
                 if row["pub_type"] == "Conference":
-                    stats["conferences"] = row["count"]
+                    stats["conferences"] += row["count"]
+                status = row["publication_status"]
+                if status == "Submitted":
+                    stats["submitted"] += row["count"]
+                if status == "Accepted":
+                    stats["accepted"] += row["count"]
+                if status == "Published":
+                    stats["published"] += row["count"]
             self._send_json(HTTPStatus.OK, {"stats": stats})
             return
 
@@ -297,9 +313,11 @@ class FacultyPublicationHandler(BaseHTTPRequestHandler):
             query_params = parse_qs(parsed.query)
             q = query_params.get("q", [""])[0].strip().lower()
             pub_type = query_params.get("type", [""])[0].strip()
+            status_filter = query_params.get("status", [""])[0].strip()
+            year_filter = query_params.get("year", [""])[0].strip()
 
             sql = """
-                SELECT id, title, authors, venue, pub_type, conference_scope, indexing_params, published_date, content, doi, file_name, created_at
+                SELECT id, title, authors, venue, pub_type, conference_scope, indexing_params, published_date, content, publication_status, citation_count, publisher_name, doi, file_name, created_at
                 FROM publications
                 WHERE faculty_id = ?
             """
@@ -307,6 +325,12 @@ class FacultyPublicationHandler(BaseHTTPRequestHandler):
             if pub_type:
                 sql += " AND pub_type = ?"
                 args.append(pub_type)
+            if status_filter:
+                sql += " AND publication_status = ?"
+                args.append(status_filter)
+            if year_filter and year_filter.isdigit():
+                sql += " AND strftime('%Y', published_date) = ?"
+                args.append(year_filter)
             if q:
                 sql += " AND (LOWER(title) LIKE ? OR LOWER(authors) LIKE ? OR LOWER(venue) LIKE ?)"
                 like = f"%{q}%"
@@ -326,6 +350,9 @@ class FacultyPublicationHandler(BaseHTTPRequestHandler):
                     "indexing": [value for value in (row["indexing_params"] or "").split(",") if value],
                     "publishedDate": row["published_date"],
                     "content": row["content"] or "",
+                    "status": row["publication_status"] or "Submitted",
+                    "citationCount": int(row["citation_count"] or 0),
+                    "publisherName": row["publisher_name"] or "",
                     "doi": row["doi"] or "",
                     "hasAttachment": bool(row["file_name"]),
                     "fileName": row["file_name"] or "",
@@ -436,6 +463,45 @@ class FacultyPublicationHandler(BaseHTTPRequestHandler):
             self._send_json(HTTPStatus.OK, {"ok": True})
             return
 
+        if parsed.path.startswith("/api/publications/") and parsed.path.endswith("/status"):
+            faculty = self._auth_faculty()
+            if not faculty:
+                self._send_json(HTTPStatus.UNAUTHORIZED, {"error": "Unauthorized"})
+                return
+
+            parts = parsed.path.strip("/").split("/")
+            if len(parts) != 4 or parts[0] != "api" or parts[1] != "publications" or parts[3] != "status":
+                self._send_json(HTTPStatus.NOT_FOUND, {"error": "Not found"})
+                return
+
+            pub_id = parts[2]
+            if not pub_id.isdigit():
+                self._send_json(HTTPStatus.BAD_REQUEST, {"error": "Invalid publication id."})
+                return
+
+            status = (payload.get("status") or "").strip()
+            if status not in {"Draft", "Submitted", "Accepted", "Published"}:
+                self._send_json(HTTPStatus.BAD_REQUEST, {"error": "Invalid publication status."})
+                return
+
+            with self._connect() as conn:
+                updated = conn.execute(
+                    """
+                    UPDATE publications
+                    SET publication_status = ?
+                    WHERE id = ? AND faculty_id = ?
+                    """,
+                    (status, int(pub_id), faculty["id"]),
+                ).rowcount
+                conn.commit()
+
+            if not updated:
+                self._send_json(HTTPStatus.NOT_FOUND, {"error": "Publication not found."})
+                return
+
+            self._send_json(HTTPStatus.OK, {"ok": True})
+            return
+
         if parsed.path == "/api/publications":
             faculty = self._auth_faculty()
             if not faculty:
@@ -450,12 +516,27 @@ class FacultyPublicationHandler(BaseHTTPRequestHandler):
             indexing_values = payload.get("indexing") or []
             published_date = (payload.get("publishedDate") or "").strip()
             content = (payload.get("content") or "").strip()
+            status = (payload.get("status") or "").strip() or "Submitted"
+            citation_count_raw = payload.get("citationCount")
+            publisher_name = (payload.get("publisherName") or "").strip()
             doi = (payload.get("doi") or "").strip()
             attachment = payload.get("attachment") or {}
             file_name = (attachment.get("name") or "").strip()
             file_type = (attachment.get("type") or "").strip()
             file_data_b64 = (attachment.get("data") or "").strip()
             file_data: bytes | None = None
+
+            try:
+                citation_count = int(citation_count_raw or 0)
+            except (TypeError, ValueError):
+                self._send_json(HTTPStatus.BAD_REQUEST, {"error": "Citation count must be numeric."})
+                return
+            if citation_count < 0:
+                self._send_json(HTTPStatus.BAD_REQUEST, {"error": "Citation count cannot be negative."})
+                return
+            if status not in {"Draft", "Submitted", "Accepted", "Published"}:
+                self._send_json(HTTPStatus.BAD_REQUEST, {"error": "Invalid publication status."})
+                return
 
             if file_data_b64:
                 try:
@@ -512,8 +593,8 @@ class FacultyPublicationHandler(BaseHTTPRequestHandler):
                 conn.execute(
                     """
                     INSERT INTO publications (
-                        faculty_id, title, authors, venue, pub_type, conference_scope, indexing_params, published_date, content, doi, file_name, file_type, file_data, created_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        faculty_id, title, authors, venue, pub_type, conference_scope, indexing_params, published_date, content, publication_status, citation_count, publisher_name, doi, file_name, file_type, file_data, created_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         faculty["id"],
@@ -525,6 +606,9 @@ class FacultyPublicationHandler(BaseHTTPRequestHandler):
                         ",".join(normalized_indexing),
                         published_date,
                         content,
+                        status,
+                        citation_count,
+                        publisher_name,
                         doi,
                         file_name or None,
                         file_type or None,

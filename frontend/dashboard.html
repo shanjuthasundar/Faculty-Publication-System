@@ -45,6 +45,14 @@
         <p>Conference Papers</p>
         <h2 id="conferenceCount">0</h2>
       </article>
+      <article class="metric-card">
+        <p>Submitted</p>
+        <h2 id="submittedCount">0</h2>
+      </article>
+      <article class="metric-card">
+        <p>Published</p>
+        <h2 id="publishedCount">0</h2>
+      </article>
     </section>
 
     <section class="panel">
@@ -58,7 +66,18 @@
             <option value="Journal">Journal</option>
             <option value="Article">Article</option>
           </select>
+          <select id="statusFilter" class="form-select search-box">
+            <option value="All">All Status</option>
+            <option value="Draft">Draft</option>
+            <option value="Submitted">Submitted</option>
+            <option value="Accepted">Accepted</option>
+            <option value="Published">Published</option>
+          </select>
+          <select id="yearFilter" class="form-select search-box">
+            <option value="All">All Years</option>
+          </select>
           <input id="searchInput" class="form-control search-box" placeholder="Search by title, venue, author">
+          <button id="exportCsvBtn" class="btn btn-outline-primary">Export CSV</button>
         </div>
       </div>
       <div class="table-responsive">
@@ -71,6 +90,8 @@
               <th>Indexing</th>
               <th>Venue</th>
               <th>Date</th>
+              <th>Status</th>
+              <th>Citations</th>
               <th>DOI</th>
               <th>Action</th>
             </tr>

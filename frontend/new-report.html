@@ -88,6 +88,23 @@
           <label class="form-label" for="doi">DOI</label>
           <input id="doi" class="form-control" placeholder="10.1000/xyz123">
         </div>
+        <div class="col-md-6">
+          <label class="form-label" for="publicationStatus">Publication Status</label>
+          <select id="publicationStatus" class="form-select" required>
+            <option value="Draft">Draft</option>
+            <option value="Submitted" selected>Submitted</option>
+            <option value="Accepted">Accepted</option>
+            <option value="Published">Published</option>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="citationCount">Citation Count</label>
+          <input id="citationCount" type="number" min="0" class="form-control" value="0">
+        </div>
+        <div class="col-12">
+          <label class="form-label" for="publisherName">Publisher</label>
+          <input id="publisherName" class="form-control" placeholder="Elsevier / Springer / IEEE / ACM">
+        </div>
         <div class="col-12">
           <label class="form-label" for="content">Publication Content / Abstract</label>
           <textarea id="content" class="form-control" rows="5" placeholder="Write publication summary, abstract, or key content..." required></textarea>

@@ -69,6 +69,19 @@ function formatIndexing(indexing = []) {
   return indexing.join(", ");
 }
 
+function getStatusClass(status) {
+  if (status === "Draft") {
+    return "status-draft";
+  }
+  if (status === "Accepted") {
+    return "status-accepted";
+  }
+  if (status === "Published") {
+    return "status-published";
+  }
+  return "status-submitted";
+}
+
 function getTypeLabel(publication) {
   if (publication.type === "Conference") {
     if (publication.conferenceScope === "International") {
@@ -80,6 +93,13 @@ function getTypeLabel(publication) {
     return "Conference";
   }
   return publication.type || "Unknown";
+}
+
+function getPublicationYear(publishedDate) {
+  if (!publishedDate || String(publishedDate).length < 4) {
+    return "";
+  }
+  return String(publishedDate).slice(0, 4);
 }
 
 function fileToBase64(file) {
@@ -255,6 +275,8 @@ function renderPublicationRows(publications) {
     const attachmentAction = item.hasAttachment
       ? `<button class="btn btn-sm btn-outline-primary rounded-pill me-1" data-download-id="${item.id}" data-file-name="${fileToken}">File</button>`
       : `<span class="small text-muted me-1">No file</span>`;
+    const statusClass = getStatusClass(item.status || "Submitted");
+    const status = item.status || "Submitted";
 
     const row = document.createElement("tr");
     const typeLabel = getTypeLabel(item);
@@ -268,8 +290,20 @@ function renderPublicationRows(publications) {
       <td><span class="pill">${typeLabel}</span></td>
       <td>${scope}</td>
       <td>${formatIndexing(item.indexing)}</td>
-      <td>${item.venue}</td>
+      <td>
+        <div>${item.venue}</div>
+        <div class="small text-muted">${item.publisherName || "Publisher not specified"}</div>
+      </td>
       <td>${item.publishedDate}</td>
+      <td>
+        <select class="form-select form-select-sm ${statusClass}" data-status-id="${item.id}">
+          <option value="Draft" ${status === "Draft" ? "selected" : ""}>Draft</option>
+          <option value="Submitted" ${status === "Submitted" ? "selected" : ""}>Submitted</option>
+          <option value="Accepted" ${status === "Accepted" ? "selected" : ""}>Accepted</option>
+          <option value="Published" ${status === "Published" ? "selected" : ""}>Published</option>
+        </select>
+      </td>
+      <td>${item.citationCount ?? 0}</td>
       <td>${item.doi || "-"}</td>
       <td>
         ${attachmentAction}
@@ -299,10 +333,102 @@ async function downloadAttachment(publicationId, fileName = `publication-${publi
   URL.revokeObjectURL(url);
 }
 
-async function loadDashboardData(query = "", typeFilter = "All") {
+async function updatePublicationStatus(publicationId, status) {
+  await apiRequest(`/publications/${publicationId}/status`, {
+    method: "POST",
+    headers: withAuthHeaders(),
+    body: JSON.stringify({ status })
+  });
+}
+
+function exportPublicationsCsv(publications) {
+  if (!publications.length) {
+    alert("No publication records to export.");
+    return;
+  }
+
+  const rows = [
+    [
+      "Title",
+      "Authors",
+      "Type",
+      "Conference Scope",
+      "Indexing",
+      "Venue",
+      "Publisher",
+      "Published Date",
+      "Status",
+      "Citations",
+      "DOI"
+    ],
+    ...publications.map((item) => [
+      item.title || "",
+      item.authors || "",
+      getTypeLabel(item),
+      item.conferenceScope || "",
+      formatIndexing(item.indexing),
+      item.venue || "",
+      item.publisherName || "",
+      item.publishedDate || "",
+      item.status || "",
+      String(item.citationCount ?? 0),
+      item.doi || ""
+    ])
+  ];
+
+  const csvContent = rows
+    .map((row) => row.map((value) => `"${String(value).replace(/"/g, "\"\"")}"`).join(","))
+    .join("\n");
+
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = `publications-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+}
+
+function populateYearFilter(publications) {
+  const yearFilter = document.getElementById("yearFilter");
+  if (!yearFilter) {
+    return;
+  }
+  const selected = yearFilter.value || "All";
+  const years = Array.from(
+    new Set(
+      publications
+        .map((item) => getPublicationYear(item.publishedDate))
+        .filter((year) => year)
+    )
+  ).sort((a, b) => Number(b) - Number(a));
+
+  yearFilter.innerHTML = `<option value="All">All Years</option>${years
+    .map((year) => `<option value="${year}">${year}</option>`)
+    .join("")}`;
+  if (years.includes(selected)) {
+    yearFilter.value = selected;
+  }
+}
+
+async function loadDashboardData(query = "", typeFilter = "All", statusFilter = "All", yearFilter = "All") {
+  const params = new URLSearchParams();
+  if (query) {
+    params.set("q", query);
+  }
+  if (statusFilter !== "All") {
+    params.set("status", statusFilter);
+  }
+  if (yearFilter !== "All") {
+    params.set("year", yearFilter);
+  }
+  const publicationPath = params.toString() ? `/publications?${params.toString()}` : "/publications";
+
   const [statsData, publicationsData] = await Promise.all([
     apiRequest("/publications/stats", { headers: withAuthHeaders() }),
-    apiRequest(`/publications?q=${encodeURIComponent(query)}`, { headers: withAuthHeaders() })
+    apiRequest(publicationPath, { headers: withAuthHeaders() })
   ]);
 
   const filteredPublications =
@@ -313,7 +439,16 @@ async function loadDashboardData(query = "", typeFilter = "All") {
   document.getElementById("totalPublications").textContent = statsData.stats.total;
   document.getElementById("journalCount").textContent = statsData.stats.journals;
   document.getElementById("conferenceCount").textContent = statsData.stats.conferences;
+  const submittedNode = document.getElementById("submittedCount");
+  const publishedNode = document.getElementById("publishedCount");
+  if (submittedNode) {
+    submittedNode.textContent = statsData.stats.submitted ?? 0;
+  }
+  if (publishedNode) {
+    publishedNode.textContent = statsData.stats.published ?? 0;
+  }
   renderPublicationRows(filteredPublications);
+  return filteredPublications;
 }
 
 async function setupDashboard() {
@@ -323,13 +458,24 @@ async function setupDashboard() {
   }
 
   const typeFilter = document.getElementById("typeFilter");
-  await loadDashboardData("", typeFilter.value);
+  const statusFilter = document.getElementById("statusFilter");
+  const yearFilter = document.getElementById("yearFilter");
+  const exportBtn = document.getElementById("exportCsvBtn");
+  let visiblePublications = [];
+
+  const allPublications = await apiRequest("/publications", { headers: withAuthHeaders() });
+  populateYearFilter(allPublications.publications || []);
+  visiblePublications = await loadDashboardData("", typeFilter.value, statusFilter.value, yearFilter.value);
 
   const searchInput = document.getElementById("searchInput");
   let debounceTimer = null;
 
   function refreshDashboardView() {
-    loadDashboardData(searchInput.value.trim(), typeFilter.value).catch((error) => {
+    loadDashboardData(searchInput.value.trim(), typeFilter.value, statusFilter.value, yearFilter.value)
+      .then((rows) => {
+        visiblePublications = rows;
+      })
+      .catch((error) => {
       alert(error.message);
     });
   }
@@ -343,8 +489,29 @@ async function setupDashboard() {
     }, 220);
   });
   typeFilter.addEventListener("change", refreshDashboardView);
+  statusFilter.addEventListener("change", refreshDashboardView);
+  yearFilter.addEventListener("change", refreshDashboardView);
+  exportBtn.addEventListener("click", () => exportPublicationsCsv(visiblePublications));
 
   const tableBody = document.getElementById("publicationTableBody");
+  tableBody.addEventListener("change", async (event) => {
+    const statusSelect = event.target.closest("select[data-status-id]");
+    if (!statusSelect) {
+      return;
+    }
+    const publicationId = statusSelect.dataset.statusId;
+    const selectedStatus = statusSelect.value;
+    statusSelect.disabled = true;
+    try {
+      await updatePublicationStatus(publicationId, selectedStatus);
+      refreshDashboardView();
+    } catch (error) {
+      alert(error.message);
+    } finally {
+      statusSelect.disabled = false;
+    }
+  });
+
   tableBody.addEventListener("click", async (event) => {
     const downloadButton = event.target.closest("button[data-download-id]");
     if (downloadButton) {
@@ -370,7 +537,12 @@ async function setupDashboard() {
         method: "DELETE",
         headers: withAuthHeaders()
       });
-      await loadDashboardData(searchInput.value.trim(), typeFilter.value);
+      visiblePublications = await loadDashboardData(
+        searchInput.value.trim(),
+        typeFilter.value,
+        statusFilter.value,
+        yearFilter.value
+      );
     } catch (error) {
       alert(error.message);
     } finally {
@@ -413,6 +585,9 @@ async function setupPublicationForm() {
       indexing: Array.from(document.querySelectorAll("input[name='indexing']:checked")).map((node) => node.value),
       publishedDate: document.getElementById("publishedDate").value,
       content: document.getElementById("content").value.trim(),
+      status: document.getElementById("publicationStatus").value,
+      citationCount: Number(document.getElementById("citationCount").value || 0),
+      publisherName: document.getElementById("publisherName").value.trim(),
       doi: document.getElementById("doi").value.trim()
     };
 
@@ -425,6 +600,13 @@ async function setupPublicationForm() {
 
     if (payload.type === "Conference" && !payload.conferenceScope) {
       messageNode.textContent = "Please select conference scope (National/International).";
+      messageNode.classList.add("text-danger");
+      messageNode.classList.remove("d-none");
+      return;
+    }
+
+    if (Number.isNaN(payload.citationCount) || payload.citationCount < 0) {
+      messageNode.textContent = "Citation count must be a valid non-negative number.";
       messageNode.classList.add("text-danger");
       messageNode.classList.remove("d-none");
       return;

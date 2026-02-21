@@ -250,7 +250,8 @@ h4 {
 }
 
 .search-box {
-  max-width: 320px;
+  max-width: 240px;
+  min-width: 170px;
 }
 
 .table thead th {
@@ -272,6 +273,38 @@ h4 {
   padding: 0.22rem 0.6rem;
   font-size: 0.78rem;
   font-weight: 700;
+}
+
+.status-pill {
+  border-radius: 999px;
+  padding: 0.22rem 0.58rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+
+.status-draft {
+  background: #f2f3f5;
+  color: #4c5562;
+  border-color: #d8dce2;
+}
+
+.status-submitted {
+  background: #fff4dd;
+  color: #8a6110;
+  border-color: #f1ddaf;
+}
+
+.status-accepted {
+  background: #e8f4ff;
+  color: #1d5d9f;
+  border-color: #c9e0fb;
+}
+
+.status-published {
+  background: #e8f8ec;
+  color: #1f6c3b;
+  border-color: #bfe5cb;
 }
 
 .form-panel {
