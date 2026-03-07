@@ -1,0 +1,217 @@
+{
+  "info": {
+    "_postman_id": "8f1e8f1b-c0ba-4f6d-9a07-89adcb561c6f",
+    "name": "Faculty Publication System API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "API tests for auth + CRUD routes."
+  },
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/health"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Health OK', function () {",
+              "  pm.response.to.have.status(200);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Register",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Dr. Ritik\",\n  \"email\": \"ritik@example.edu\",\n  \"password\": \"StrongPass123\"\n}"
+        },
+        "url": "{{baseUrl}}/auth/register"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Register response status', function () {",
+              "  pm.expect([201, 409]).to.include(pm.response.code);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"ritik@example.edu\",\n  \"password\": \"StrongPass123\"\n}"
+        },
+        "url": "{{baseUrl}}/auth/login"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Login OK', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const data = pm.response.json();",
+              "pm.collectionVariables.set('token', data.token);",
+              "pm.collectionVariables.set('publicationId', '');"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Create Publication",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Efficient AI for Faculty Analytics\",\n  \"authors\": \"Dr. Ritik, Team\",\n  \"venue\": \"IEEE Access\",\n  \"type\": \"Journal\",\n  \"conferenceScope\": \"\",\n  \"indexing\": [\"Scopus\"],\n  \"publishedDate\": \"2025-12-01\",\n  \"content\": \"Validated full-stack faculty publication system architecture.\",\n  \"status\": \"Submitted\",\n  \"citationCount\": 0,\n  \"publisherName\": \"IEEE\",\n  \"doi\": \"10.1000/fps-001\"\n}"
+        },
+        "url": "{{baseUrl}}/publications"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Created publication', function () {",
+              "  pm.response.to.have.status(201);",
+              "});",
+              "const data = pm.response.json();",
+              "pm.collectionVariables.set('publicationId', String(data.publicationId));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "List Publications",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/publications"
+      }
+    },
+    {
+      "name": "Get Publication By ID",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/publications/{{publicationId}}"
+      }
+    },
+    {
+      "name": "Update Publication",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Efficient AI for Faculty Analytics (Revised)\",\n  \"authors\": \"Dr. Ritik, Team\",\n  \"venue\": \"IEEE Access\",\n  \"type\": \"Journal\",\n  \"conferenceScope\": \"\",\n  \"indexing\": [\"Scopus\", \"SCI\"],\n  \"publishedDate\": \"2025-12-01\",\n  \"content\": \"Updated publication record from dashboard edit flow.\",\n  \"status\": \"Accepted\",\n  \"citationCount\": 4,\n  \"publisherName\": \"IEEE\",\n  \"doi\": \"10.1000/fps-001\"\n}"
+        },
+        "url": "{{baseUrl}}/publications/{{publicationId}}"
+      }
+    },
+    {
+      "name": "Delete Publication",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/publications/{{publicationId}}"
+      }
+    },
+    {
+      "name": "Logout",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": "{{baseUrl}}/auth/logout"
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:8000/api"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "publicationId",
+      "value": ""
+    }
+  ]
+}

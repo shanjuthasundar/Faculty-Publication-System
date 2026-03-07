@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -21,31 +21,21 @@
 
   <section class="auth-card">
     <h2 id="authTitle">Author Sign In</h2>
-    <p id="authSubtitle" class="text-muted mb-4">Use your author account. New email IDs can be created from this page.</p>
+    <p id="authSubtitle" class="text-muted mb-4">Use your BITS institutional account only (@bitsathy.ac.in).</p>
     <form id="loginForm">
       <label class="form-label" for="authorName">Author Name (required for first login)</label>
       <input id="authorName" type="text" class="form-control form-control-lg mb-3" placeholder="Dr. Jane Doe">
 
       <label class="form-label" for="authorEmail">Author Email</label>
-      <input id="authorEmail" type="email" class="form-control form-control-lg mb-3" placeholder="author@university.edu" required>
+      <input id="authorEmail" type="email" class="form-control form-control-lg mb-3" placeholder="yourname@bitsathy.ac.in" required>
 
       <label class="form-label" for="authorPassword">Password</label>
       <input id="authorPassword" type="password" class="form-control form-control-lg mb-3" placeholder="Enter password" required>
 
-      <div class="d-flex justify-content-between align-items-center mb-3">
+      <div class="d-flex justify-content-start align-items-center mb-3">
         <button id="createAccountBtn" type="button" class="btn btn-link p-0 small text-decoration-none">
           Don't have an account? Create new one
         </button>
-        <button id="forgotPasswordBtn" type="button" class="btn btn-link p-0 small text-decoration-none">
-          Forgot password?
-        </button>
-      </div>
-
-      <div class="form-check mb-4 d-none" id="recoverWrap">
-        <input class="form-check-input" type="checkbox" id="recoverPassword">
-        <label class="form-check-label small text-muted" for="recoverPassword">
-          Reset password: enter author name + email + new password
-        </label>
       </div>
 
       <button id="loginButton" class="btn btn-primary btn-lg w-100 rounded-pill">Access Dashboard</button>
@@ -53,6 +43,7 @@
     </form>
   </section>
 </main>
+<script src="js/store.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

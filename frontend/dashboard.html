@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -46,12 +46,28 @@
         <h2 id="conferenceCount">0</h2>
       </article>
       <article class="metric-card">
-        <p>Submitted</p>
-        <h2 id="submittedCount">0</h2>
+        <p>International Conferences</p>
+        <h2 id="internationalConferenceCount">0</h2>
       </article>
       <article class="metric-card">
-        <p>Published</p>
-        <h2 id="publishedCount">0</h2>
+        <p>National Conferences</p>
+        <h2 id="nationalConferenceCount">0</h2>
+      </article>
+      <article class="metric-card">
+        <p>Scopus Indexed</p>
+        <h2 id="scopusCount">0</h2>
+      </article>
+      <article class="metric-card">
+        <p>SCI Indexed</p>
+        <h2 id="sciCount">0</h2>
+      </article>
+      <article class="metric-card">
+        <p>Non-Scopus</p>
+        <h2 id="nonScopusCount">0</h2>
+      </article>
+      <article class="metric-card">
+        <p>Non-SCI</p>
+        <h2 id="nonSciCount">0</h2>
       </article>
     </section>
 
@@ -65,16 +81,23 @@
             <option value="National Conference">National Conference</option>
             <option value="Journal">Journal</option>
             <option value="Article">Article</option>
-          </select>
-          <select id="statusFilter" class="form-select search-box">
-            <option value="All">All Status</option>
-            <option value="Draft">Draft</option>
-            <option value="Submitted">Submitted</option>
-            <option value="Accepted">Accepted</option>
-            <option value="Published">Published</option>
+            <option value="Books">Books</option>
+            <option value="Chapter">Chapter</option>
           </select>
           <select id="yearFilter" class="form-select search-box">
             <option value="All">All Years</option>
+          </select>
+          <select id="scopeFilter" class="form-select search-box">
+            <option value="All">All Scopes</option>
+            <option value="International Conference">International Conference</option>
+            <option value="National Conference">National Conference</option>
+          </select>
+          <select id="indexingFilter" class="form-select search-box">
+            <option value="All">All Indexing</option>
+            <option value="Scopus">Scopus</option>
+            <option value="Non-Scopus">Non-Scopus</option>
+            <option value="SCI">SCI</option>
+            <option value="Non-SCI">Non-SCI</option>
           </select>
           <input id="searchInput" class="form-control search-box" placeholder="Search by title, venue, author">
           <button id="exportCsvBtn" class="btn btn-outline-primary">Export CSV</button>
@@ -89,9 +112,8 @@
               <th>Scope</th>
               <th>Indexing</th>
               <th>Venue</th>
-              <th>Date</th>
-              <th>Status</th>
-              <th>Citations</th>
+              <th>Submission Date</th>
+              <th>Impact Factor</th>
               <th>DOI</th>
               <th>Action</th>
             </tr>
@@ -103,6 +125,7 @@
     </section>
   </main>
 </div>
+<script src="js/store.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

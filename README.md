@@ -3,6 +3,8 @@
 Full-stack faculty publication tracker with:
 - Python backend (`backend/server.py`) + SQLite
 - HTML/CSS/JS frontend (`frontend/`)
+- JWT authentication + secure API headers + input validation
+- Redux-style centralized frontend state store (`frontend/js/store.js`)
 
 ## Project Structure
 
@@ -11,11 +13,14 @@ Final project/
   backend/
     data/
       .gitkeep
+    postman/
+      Faculty-Publication-System.postman_collection.json
     server.py
   frontend/
     css/
       style.css
     js/
+      store.js
       app.js
     login.html
     dashboard.html
@@ -33,7 +38,7 @@ Final project/
 
 ## Run in VS Code
 
-1. Open folder in VS Code: `c:\Users\Sundhar\Desktop\Final project`
+1. Open folder in VS Code: `c:\Users\RITIK ROSHAN\Documents\Final project`
 2. Open `Terminal` in VS Code (PowerShell).
 3. Start app:
    - `.\scripts\start.ps1`
@@ -58,6 +63,43 @@ Run from:
 
 ## Notes
 
-- Python launcher `py` is used (`py -3 ...`).
 - Database file is created automatically at `backend/data/fps.db`.
+- Basic server logs are written to `backend/logs/server.log`.
 
+## API Routes
+
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `POST /api/auth/request-otp`
+- `POST /api/auth/reset-password`
+- `POST /api/auth/google`
+- `GET /api/auth/config`
+- `GET /api/auth/me`
+- `POST /api/auth/logout`
+- `GET /api/publications`
+- `GET /api/publications/{id}`
+- `POST /api/publications`
+- `PUT /api/publications/{id}`
+- `DELETE /api/publications/{id}`
+- `GET /api/publications/{id}/file`
+- `GET /api/publications/stats`
+
+## Postman / Thunder Client Testing
+
+1. Import `backend/postman/Faculty-Publication-System.postman_collection.json`
+2. Run requests in this order:
+   - `Health` -> `Register` -> `Login` -> `Create Publication` -> `List Publications` -> `Get Publication By ID` -> `Update Publication` -> `Delete Publication`
+3. `token` and `publicationId` are auto-saved as collection variables from test scripts.
+
+## Auth Configuration
+
+- Allowed email domain is locked to: `@bitsathy.ac.in`
+- For OTP email delivery, set:
+  - `FPS_SMTP_HOST`
+  - `FPS_SMTP_PORT` (default: `587`)
+  - `FPS_SMTP_USER`
+  - `FPS_SMTP_PASSWORD`
+  - `FPS_SMTP_FROM`
+- OTP is sent only via email; it is never returned in API response/UI logs.
+- For Google sign-in, set:
+  - `FPS_GOOGLE_CLIENT_ID`
