@@ -15,6 +15,8 @@ class ServerValidationTests(unittest.TestCase):
             "submissionDate": "2026-03-20",
             "content": "Publication summary.",
             "impactFactor": 4.5,
+            "hIndex": 12,
+            "iIndex": 8,
             "publisherName": "IEEE",
             "doi": "10.1000/fps-001"
         }
@@ -23,6 +25,8 @@ class ServerValidationTests(unittest.TestCase):
         self.assertEqual(result["pub_type"], "Conference")
         self.assertEqual(result["conference_scope"], "International Conference")
         self.assertEqual(result["impact_factor"], 4.5)
+        self.assertEqual(result["h_index"], 12.0)
+        self.assertEqual(result["i_index"], 8.0)
 
     def test_parse_publication_payload_rejects_bad_indexing(self):
         payload = {
@@ -49,6 +53,22 @@ class ServerValidationTests(unittest.TestCase):
         self.assertEqual(parse_int_query("0", 8, 1, 50), 1)
         self.assertEqual(parse_int_query("100", 8, 1, 50), 50)
         self.assertEqual(parse_int_query("abc", 8, 1, 50), 8)
+
+    def test_parse_publication_payload_rejects_negative_h_index(self):
+        payload = {
+            "title": "Faculty Analytics",
+            "authors": "Dr. A",
+            "venue": "IEEE Access",
+            "type": "Journal",
+            "indexing": ["Scopus"],
+            "submissionDate": "2026-03-20",
+            "content": "Publication summary.",
+            "impactFactor": 2.0,
+            "hIndex": -1
+        }
+
+        with self.assertRaises(Exception):
+            parse_publication_payload(payload)
 
 
 if __name__ == "__main__":

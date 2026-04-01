@@ -58,6 +58,8 @@ export async function initPublicationFormPage() {
       document.getElementById("submissionDate").value = publication.submissionDate || publication.publishedDate || "";
       document.getElementById("content").value = publication.content || "";
       document.getElementById("impactFactor").value = Number(publication.impactFactor ?? publication.citationCount ?? 0);
+      document.getElementById("hIndex").value = Number(publication.hIndex ?? 0);
+      document.getElementById("iIndex").value = Number(publication.iIndex ?? 0);
       document.getElementById("publisherName").value = publication.publisherName || "";
       document.getElementById("doi").value = publication.doi || "";
 
@@ -89,6 +91,8 @@ export async function initPublicationFormPage() {
       submissionDate: document.getElementById("submissionDate").value,
       content: document.getElementById("content").value.trim(),
       impactFactor: Number(document.getElementById("impactFactor").value || 0),
+      hIndex: Number(document.getElementById("hIndex").value || 0),
+      iIndex: Number(document.getElementById("iIndex").value || 0),
       publisherName: document.getElementById("publisherName").value.trim(),
       doi: document.getElementById("doi").value.trim()
     };
@@ -109,6 +113,20 @@ export async function initPublicationFormPage() {
 
     if (Number.isNaN(payload.impactFactor) || payload.impactFactor < 0) {
       messageNode.textContent = "Impact factor must be a valid non-negative number.";
+      messageNode.classList.add("text-danger");
+      messageNode.classList.remove("d-none");
+      return;
+    }
+
+    if (Number.isNaN(payload.hIndex) || payload.hIndex < 0) {
+      messageNode.textContent = "h-index must be a valid non-negative number.";
+      messageNode.classList.add("text-danger");
+      messageNode.classList.remove("d-none");
+      return;
+    }
+
+    if (Number.isNaN(payload.iIndex) || payload.iIndex < 0) {
+      messageNode.textContent = "i-index must be a valid non-negative number.";
       messageNode.classList.add("text-danger");
       messageNode.classList.remove("d-none");
       return;

@@ -49,6 +49,8 @@ function renderPublicationRows(publications) {
       </td>
       <td>${item.submissionDate || item.publishedDate || "-"}</td>
       <td>${item.impactFactor ?? item.citationCount ?? 0}</td>
+      <td>${item.hIndex ?? 0}</td>
+      <td>${item.iIndex ?? 0}</td>
       <td>${item.doi || "-"}</td>
       <td>
         ${attachmentAction}
@@ -92,7 +94,7 @@ function exportPublicationsCsv(publications) {
   }
 
   const rows = [
-    ["Title", "Authors", "Type", "Conference Scope", "Indexing", "Venue", "Publisher", "Submission Date", "Impact Factor", "DOI"],
+    ["Title", "Authors", "Type", "Conference Scope", "Indexing", "Venue", "Publisher", "Submission Date", "Impact Factor", "h-index", "i-index", "DOI"],
     ...publications.map((item) => [
       item.title || "",
       item.authors || "",
@@ -103,6 +105,8 @@ function exportPublicationsCsv(publications) {
       item.publisherName || "",
       item.submissionDate || item.publishedDate || "",
       String(item.impactFactor ?? item.citationCount ?? 0),
+      String(item.hIndex ?? 0),
+      String(item.iIndex ?? 0),
       item.doi || ""
     ])
   ];
@@ -223,6 +227,8 @@ export async function initDashboardPage() {
       document.getElementById("sciCount").textContent = state.stats.sciIndexed ?? 0;
       document.getElementById("nonScopusCount").textContent = state.stats.nonScopusIndexed ?? 0;
       document.getElementById("nonSciCount").textContent = state.stats.nonSciIndexed ?? 0;
+      document.getElementById("indexedBookChapterCount").textContent = state.stats.indexedBookChapters ?? 0;
+      document.getElementById("nonIndexedBookChapterCount").textContent = state.stats.nonIndexedBookChapters ?? 0;
       renderPublicationRows(publications);
       renderPagination(state.pagination, (nextPage) => {
         filters.page = nextPage;

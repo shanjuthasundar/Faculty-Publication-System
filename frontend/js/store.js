@@ -36,7 +36,9 @@ const initialAppState = {
     scopusIndexed: 0,
     nonScopusIndexed: 0,
     sciIndexed: 0,
-    nonSciIndexed: 0
+    nonSciIndexed: 0,
+    indexedBookChapters: 0,
+    nonIndexedBookChapters: 0
   }
 };
 

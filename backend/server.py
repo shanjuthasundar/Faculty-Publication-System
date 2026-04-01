@@ -93,6 +93,8 @@ def ensure_database() -> None:
                 content TEXT NOT NULL DEFAULT '',
                 publication_status TEXT NOT NULL DEFAULT 'Submitted',
                 citation_count INTEGER NOT NULL DEFAULT 0,
+                h_index REAL NOT NULL DEFAULT 0,
+                i_index REAL NOT NULL DEFAULT 0,
                 publisher_name TEXT NOT NULL DEFAULT '',
                 doi TEXT,
                 file_name TEXT,
@@ -135,6 +137,8 @@ def ensure_database() -> None:
                 "ALTER TABLE publications ADD COLUMN publication_status TEXT NOT NULL DEFAULT 'Submitted'",
             ),
             ("citation_count", "ALTER TABLE publications ADD COLUMN citation_count INTEGER NOT NULL DEFAULT 0"),
+            ("h_index", "ALTER TABLE publications ADD COLUMN h_index REAL NOT NULL DEFAULT 0"),
+            ("i_index", "ALTER TABLE publications ADD COLUMN i_index REAL NOT NULL DEFAULT 0"),
             ("publisher_name", "ALTER TABLE publications ADD COLUMN publisher_name TEXT NOT NULL DEFAULT ''"),
             ("file_name", "ALTER TABLE publications ADD COLUMN file_name TEXT"),
             ("file_type", "ALTER TABLE publications ADD COLUMN file_type TEXT"),
@@ -352,6 +356,22 @@ def parse_publication_payload(payload: dict) -> dict:
     if impact_factor < 0:
         raise ValidationError("Impact factor cannot be negative.")
 
+    h_index_raw = payload.get("hIndex", 0)
+    try:
+        h_index = float(h_index_raw)
+    except (TypeError, ValueError):
+        raise ValidationError("h-index must be numeric.")
+    if h_index < 0:
+        raise ValidationError("h-index cannot be negative.")
+
+    i_index_raw = payload.get("iIndex", payload.get("i10Index", 0))
+    try:
+        i_index = float(i_index_raw)
+    except (TypeError, ValueError):
+        raise ValidationError("i-index must be numeric.")
+    if i_index < 0:
+        raise ValidationError("i-index cannot be negative.")
+
     indexing_values = payload.get("indexing") or []
     if not isinstance(indexing_values, list):
         raise ValidationError("Invalid indexing payload.")
@@ -396,6 +416,8 @@ def parse_publication_payload(payload: dict) -> dict:
         "submission_date": submission_date,
         "content": content,
         "impact_factor": impact_factor,
+        "h_index": h_index,
+        "i_index": i_index,
         "publisher_name": publisher_name,
         "doi": doi,
         "file_name": file_name,
@@ -523,6 +545,8 @@ class FacultyPublicationHandler(BaseHTTPRequestHandler):
             "content": row["content"] or "",
             "impactFactor": float(row["citation_count"] or 0),
             "citationCount": float(row["citation_count"] or 0),
+            "hIndex": float(row["h_index"] or 0),
+            "iIndex": float(row["i_index"] or 0),
             "publisherName": row["publisher_name"] or "",
             "doi": row["doi"] or "",
             "hasAttachment": bool(row["file_name"]),
@@ -595,6 +619,7 @@ class FacultyPublicationHandler(BaseHTTPRequestHandler):
                     rows = conn.execute(
                         """
                         SELECT pub_type, publication_status, conference_scope, indexing_params
+                             , h_index, i_index
                         FROM publications
                         WHERE faculty_id = ?
                         """,
@@ -611,6 +636,8 @@ class FacultyPublicationHandler(BaseHTTPRequestHandler):
                     "nonScopusIndexed": 0,
                     "sciIndexed": 0,
                     "nonSciIndexed": 0,
+                    "indexedBookChapters": 0,
+                    "nonIndexedBookChapters": 0,
                 }
                 for row in rows:
                     stats["total"] += 1
@@ -632,6 +659,11 @@ class FacultyPublicationHandler(BaseHTTPRequestHandler):
                         stats["sciIndexed"] += 1
                     if "Non-SCI" in indexing_set:
                         stats["nonSciIndexed"] += 1
+                    if row["pub_type"] == "Chapter":
+                        if {"Scopus", "SCI"} & indexing_set:
+                            stats["indexedBookChapters"] += 1
+                        else:
+                            stats["nonIndexedBookChapters"] += 1
 
                 self._send_json(HTTPStatus.OK, {"stats": stats})
                 return
@@ -653,7 +685,7 @@ class FacultyPublicationHandler(BaseHTTPRequestHandler):
 
                 sql = """
                     SELECT id, title, authors, venue, pub_type, conference_scope, indexing_params, published_date,
-                           content, publication_status, citation_count, publisher_name, doi, file_name, created_at, updated_at
+                           content, publication_status, citation_count, h_index, i_index, publisher_name, doi, file_name, created_at, updated_at
                     FROM publications
                     WHERE faculty_id = ?
                 """
@@ -752,7 +784,7 @@ class FacultyPublicationHandler(BaseHTTPRequestHandler):
                     row = conn.execute(
                         """
                         SELECT id, title, authors, venue, pub_type, conference_scope, indexing_params, published_date,
-                               content, publication_status, citation_count, publisher_name, doi, file_name, created_at, updated_at
+                               content, publication_status, citation_count, h_index, i_index, publisher_name, doi, file_name, created_at, updated_at
                         FROM publications
                         WHERE id = ? AND faculty_id = ?
                         """,
@@ -1036,9 +1068,9 @@ class FacultyPublicationHandler(BaseHTTPRequestHandler):
                         """
                         INSERT INTO publications (
                             faculty_id, title, authors, venue, pub_type, conference_scope, indexing_params,
-                            published_date, content, publication_status, citation_count, publisher_name, doi,
+                            published_date, content, publication_status, citation_count, h_index, i_index, publisher_name, doi,
                             file_name, file_type, file_data, created_at, updated_at
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
                         (
                             faculty["id"],
@@ -1052,6 +1084,8 @@ class FacultyPublicationHandler(BaseHTTPRequestHandler):
                             clean["content"],
                             "Submitted",
                             clean["impact_factor"],
+                            clean["h_index"],
+                            clean["i_index"],
                             clean["publisher_name"],
                             clean["doi"] or None,
                             clean["file_name"],
@@ -1121,7 +1155,7 @@ class FacultyPublicationHandler(BaseHTTPRequestHandler):
                     """
                     UPDATE publications
                     SET title = ?, authors = ?, venue = ?, pub_type = ?, conference_scope = ?, indexing_params = ?,
-                        published_date = ?, content = ?, publication_status = ?, citation_count = ?, publisher_name = ?,
+                        published_date = ?, content = ?, publication_status = ?, citation_count = ?, h_index = ?, i_index = ?, publisher_name = ?,
                         doi = ?, file_name = ?, file_type = ?, file_data = ?, updated_at = ?
                     WHERE id = ? AND faculty_id = ?
                     """,
@@ -1136,6 +1170,8 @@ class FacultyPublicationHandler(BaseHTTPRequestHandler):
                         clean["content"],
                         "Submitted",
                         clean["impact_factor"],
+                        clean["h_index"],
+                        clean["i_index"],
                         clean["publisher_name"],
                         clean["doi"] or None,
                         file_name,
