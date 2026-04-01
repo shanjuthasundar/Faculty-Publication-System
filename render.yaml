@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: faculty-publication-system
+    runtime: python
+    plan: free
+    buildCommand: "python -m compileall backend"
+    startCommand: "python backend/server.py"
+    envVars:
+      - key: FPS_JWT_SECRET
+        sync: false
+      - key: FPS_HOST
+        value: 0.0.0.0
+    disk:
+      name: faculty-publication-data
+      mountPath: /opt/render/project/src/backend/data
+      sizeGB: 1

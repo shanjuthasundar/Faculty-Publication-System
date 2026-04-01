@@ -25,6 +25,8 @@ DATA_DIR = ROOT_DIR / "backend" / "data"
 LOG_DIR = ROOT_DIR / "backend" / "logs"
 DB_PATH = DATA_DIR / "fps.db"
 MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+DEFAULT_PAGE_SIZE = 8
+MAX_PAGE_SIZE = 50
 
 JWT_SECRET = os.environ.get("FPS_JWT_SECRET", "fps-dev-secret-change-this")
 JWT_EXP_HOURS = 12
@@ -162,6 +164,10 @@ def ensure_database() -> None:
             """,
             (utc_now().isoformat(),),
         )
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_publications_faculty_date ON publications(faculty_id, published_date DESC)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_publications_faculty_type ON publications(faculty_id, pub_type)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_publications_faculty_scope ON publications(faculty_id, conference_scope)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_faculties_email ON faculties(email)")
         conn.commit()
 
 
@@ -310,6 +316,14 @@ def normalize_indexing(values: list) -> list[str]:
         if value not in normalized:
             normalized.append(value)
     return normalized
+
+
+def parse_int_query(value: str, default: int, minimum: int, maximum: int) -> int:
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return default
+    return max(minimum, min(parsed, maximum))
 
 
 def parse_publication_payload(payload: dict) -> dict:
@@ -634,6 +648,8 @@ class FacultyPublicationHandler(BaseHTTPRequestHandler):
                 year_filter = query_params.get("year", [""])[0].strip()
                 scope_filter = query_params.get("scope", [""])[0].strip()
                 indexing_filter = query_params.get("indexing", [""])[0].strip()
+                page = parse_int_query(query_params.get("page", ["1"])[0], 1, 1, 100000)
+                page_size = parse_int_query(query_params.get("page_size", [str(DEFAULT_PAGE_SIZE)])[0], DEFAULT_PAGE_SIZE, 1, MAX_PAGE_SIZE)
 
                 sql = """
                     SELECT id, title, authors, venue, pub_type, conference_scope, indexing_params, published_date,
@@ -641,31 +657,57 @@ class FacultyPublicationHandler(BaseHTTPRequestHandler):
                     FROM publications
                     WHERE faculty_id = ?
                 """
+                count_sql = "SELECT COUNT(*) AS total FROM publications WHERE faculty_id = ?"
                 args: list = [faculty["id"]]
+                count_args: list = [faculty["id"]]
 
                 if pub_type:
                     sql += " AND pub_type = ?"
                     args.append(pub_type)
+                    count_sql += " AND pub_type = ?"
+                    count_args.append(pub_type)
                 if year_filter and year_filter.isdigit():
                     sql += " AND strftime('%Y', published_date) = ?"
                     args.append(year_filter)
+                    count_sql += " AND strftime('%Y', published_date) = ?"
+                    count_args.append(year_filter)
                 if scope_filter in VALID_SCOPE:
                     sql += " AND conference_scope = ?"
                     args.append(scope_filter)
+                    count_sql += " AND conference_scope = ?"
+                    count_args.append(scope_filter)
                 if indexing_filter in VALID_INDEXING:
                     sql += " AND instr(',' || indexing_params || ',', ',' || ? || ',') > 0"
                     args.append(indexing_filter)
+                    count_sql += " AND instr(',' || indexing_params || ',', ',' || ? || ',') > 0"
+                    count_args.append(indexing_filter)
                 if q:
                     like = f"%{q}%"
                     sql += " AND (LOWER(title) LIKE ? OR LOWER(authors) LIKE ? OR LOWER(venue) LIKE ? OR LOWER(content) LIKE ?)"
                     args.extend([like, like, like, like])
+                    count_sql += " AND (LOWER(title) LIKE ? OR LOWER(authors) LIKE ? OR LOWER(venue) LIKE ? OR LOWER(content) LIKE ?)"
+                    count_args.extend([like, like, like, like])
 
                 sql += " ORDER BY published_date DESC, created_at DESC"
+                sql += " LIMIT ? OFFSET ?"
+                args.extend([page_size, (page - 1) * page_size])
 
                 with self._connect() as conn:
+                    total = int(conn.execute(count_sql, count_args).fetchone()["total"])
                     rows = conn.execute(sql, args).fetchall()
 
-                self._send_json(HTTPStatus.OK, {"publications": [self._format_publication(row) for row in rows]})
+                self._send_json(
+                    HTTPStatus.OK,
+                    {
+                        "publications": [self._format_publication(row) for row in rows],
+                        "pagination": {
+                            "page": page,
+                            "pageSize": page_size,
+                            "total": total,
+                            "totalPages": max(1, (total + page_size - 1) // page_size),
+                        },
+                    },
+                )
                 return
 
             pub_file_id = self._parse_pub_id(parsed.path, with_suffix="file")
@@ -1131,8 +1173,10 @@ class FacultyPublicationHandler(BaseHTTPRequestHandler):
 def run() -> None:
     setup_logging()
     ensure_database()
-    server = ThreadingHTTPServer(("127.0.0.1", 8000), FacultyPublicationHandler)
-    logging.info("Faculty Publication System running at http://127.0.0.1:8000")
+    host = os.environ.get("FPS_HOST", "0.0.0.0")
+    port = int(os.environ.get("PORT", os.environ.get("FPS_PORT", "8000")))
+    server = ThreadingHTTPServer((host, port), FacultyPublicationHandler)
+    logging.info("Faculty Publication System running at http://%s:%s", host, port)
     server.serve_forever()
 
 

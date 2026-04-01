@@ -1,0 +1,59 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Faculty Publication System API",
+    "version": "1.0.0",
+    "description": "REST API for faculty publication tracking, authentication, reporting, and attachments."
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:8000/api"
+    }
+  ],
+  "paths": {
+    "/auth/register": {
+      "post": {
+        "summary": "Register a faculty account"
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "summary": "Login and receive JWT"
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "summary": "Get current faculty profile"
+      }
+    },
+    "/publications": {
+      "get": {
+        "summary": "List publications with search, filtering, and pagination"
+      },
+      "post": {
+        "summary": "Create publication"
+      }
+    },
+    "/publications/{id}": {
+      "get": {
+        "summary": "Get a publication by id"
+      },
+      "put": {
+        "summary": "Update publication"
+      },
+      "delete": {
+        "summary": "Delete publication"
+      }
+    },
+    "/publications/{id}/file": {
+      "get": {
+        "summary": "Download or preview publication attachment"
+      }
+    },
+    "/publications/stats": {
+      "get": {
+        "summary": "Get dashboard publication statistics"
+      }
+    }
+  }
+}

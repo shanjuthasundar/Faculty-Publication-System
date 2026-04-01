@@ -21,6 +21,12 @@ function createStore(reducer, initialState) {
 const initialAppState = {
   faculty: null,
   publications: [],
+  pagination: {
+    page: 1,
+    pageSize: 8,
+    total: 0,
+    totalPages: 1
+  },
   stats: {
     total: 0,
     journals: 0,
@@ -42,6 +48,8 @@ function appReducer(state, action) {
       return { ...state, publications: Array.isArray(action.payload) ? action.payload : [] };
     case "SET_STATS":
       return { ...state, stats: action.payload || state.stats };
+    case "SET_PAGINATION":
+      return { ...state, pagination: action.payload || state.pagination };
     case "RESET_APP":
       return { ...initialAppState };
     default:
@@ -49,4 +57,5 @@ function appReducer(state, action) {
   }
 }
 
-window.appStore = createStore(appReducer, initialAppState);
+export const store = createStore(appReducer, initialAppState);
+window.appStore = store;

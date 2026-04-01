@@ -106,7 +106,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"title\": \"Efficient AI for Faculty Analytics\",\n  \"authors\": \"Dr. Ritik, Team\",\n  \"venue\": \"IEEE Access\",\n  \"type\": \"Journal\",\n  \"conferenceScope\": \"\",\n  \"indexing\": [\"Scopus\"],\n  \"publishedDate\": \"2025-12-01\",\n  \"content\": \"Validated full-stack faculty publication system architecture.\",\n  \"status\": \"Submitted\",\n  \"citationCount\": 0,\n  \"publisherName\": \"IEEE\",\n  \"doi\": \"10.1000/fps-001\"\n}"
+          "raw": "{\n  \"title\": \"Efficient AI for Faculty Analytics\",\n  \"authors\": \"Dr. Ritik, Team\",\n  \"venue\": \"IEEE Access\",\n  \"type\": \"Journal\",\n  \"conferenceScope\": \"\",\n  \"indexing\": [\"Scopus\"],\n  \"submissionDate\": \"2025-12-01\",\n  \"content\": \"Validated full-stack faculty publication system architecture.\",\n  \"impactFactor\": 3.2,\n  \"publisherName\": \"IEEE\",\n  \"doi\": \"10.1000/fps-001\"\n}"
         },
         "url": "{{baseUrl}}/publications"
       },
@@ -168,7 +168,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"title\": \"Efficient AI for Faculty Analytics (Revised)\",\n  \"authors\": \"Dr. Ritik, Team\",\n  \"venue\": \"IEEE Access\",\n  \"type\": \"Journal\",\n  \"conferenceScope\": \"\",\n  \"indexing\": [\"Scopus\", \"SCI\"],\n  \"publishedDate\": \"2025-12-01\",\n  \"content\": \"Updated publication record from dashboard edit flow.\",\n  \"status\": \"Accepted\",\n  \"citationCount\": 4,\n  \"publisherName\": \"IEEE\",\n  \"doi\": \"10.1000/fps-001\"\n}"
+          "raw": "{\n  \"title\": \"Efficient AI for Faculty Analytics (Revised)\",\n  \"authors\": \"Dr. Ritik, Team\",\n  \"venue\": \"IEEE Access\",\n  \"type\": \"Journal\",\n  \"conferenceScope\": \"\",\n  \"indexing\": [\"Scopus\", \"SCI\"],\n  \"submissionDate\": \"2025-12-01\",\n  \"content\": \"Updated publication record from dashboard edit flow.\",\n  \"impactFactor\": 4.1,\n  \"publisherName\": \"IEEE\",\n  \"doi\": \"10.1000/fps-001\"\n}"
         },
         "url": "{{baseUrl}}/publications/{{publicationId}}"
       }
