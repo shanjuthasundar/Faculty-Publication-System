@@ -823,6 +823,7 @@ class FacultyPublicationHandler(BaseHTTPRequestHandler):
                 return
 
             if parsed.path == "/api/auth/login":
+                name = str(payload.get("name") or "").strip()
                 email = str(payload.get("email") or "").strip().lower()
                 password = str(payload.get("password") or "").strip()
 
@@ -838,6 +839,21 @@ class FacultyPublicationHandler(BaseHTTPRequestHandler):
                         "SELECT id, name, email, password_hash, password_salt FROM faculties WHERE email = ?",
                         (email,),
                     ).fetchone()
+
+                    if not faculty and name:
+                        password_hash, password_salt = hash_password(password)
+                        conn.execute(
+                            """
+                            INSERT INTO faculties (name, email, password_hash, password_salt, created_at)
+                            VALUES (?, ?, ?, ?, ?)
+                            """,
+                            (name, email, password_hash, password_salt, utc_now().isoformat()),
+                        )
+                        faculty = conn.execute(
+                            "SELECT id, name, email, password_hash, password_salt FROM faculties WHERE email = ?",
+                            (email,),
+                        ).fetchone()
+                        conn.commit()
 
                 if not faculty or not verify_password(password, faculty["password_hash"], faculty["password_salt"]):
                     self._send_json(HTTPStatus.UNAUTHORIZED, {"error": "Invalid credentials."})
